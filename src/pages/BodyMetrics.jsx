@@ -2,12 +2,18 @@ import { useState, useMemo } from 'react'
 import { useBodyMetrics } from '../hooks/useBodyMetrics'
 import { formatNumber } from '../lib/utils'
 import MetricCard from '../components/MetricCard'
-import EmptyState from '../components/EmptyState'
+import Modal from '../components/Modal'
 import { Plus, Trash2 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { format } from 'date-fns'
 
-const chartTooltipStyle = { background: '#FFFFFF', border: '1px solid #E2E5EB', borderRadius: 10, fontSize: 13, padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
+const tooltipStyle = {
+  background: '#fff',
+  border: '1px solid hsl(214 20% 90%)',
+  borderRadius: 8,
+  fontSize: 12,
+  padding: '6px 10px',
+}
 
 export default function BodyMetrics() {
   const { metrics, addMetric, deleteMetric } = useBodyMetrics()
@@ -39,150 +45,134 @@ export default function BodyMetrics() {
     if (metrics.length === 0) return null
     const first = metrics[0]
     const last = metrics[metrics.length - 1]
-    const weightChange = (first.weight_kg && last.weight_kg) ? last.weight_kg - first.weight_kg : null
-    const bfChange = (first.body_fat_pct && last.body_fat_pct) ? last.body_fat_pct - first.body_fat_pct : null
-    const muscleChange = (first.muscle_mass_kg && last.muscle_mass_kg) ? last.muscle_mass_kg - first.muscle_mass_kg : null
+    const weightChange = (first.weight_kg && last.weight_kg) ? (last.weight_kg - first.weight_kg).toFixed(1) : null
+    const bfChange = (first.body_fat_pct && last.body_fat_pct) ? (last.body_fat_pct - first.body_fat_pct).toFixed(1) : null
+    const muscleChange = (first.muscle_mass_kg && last.muscle_mass_kg) ? (last.muscle_mass_kg - first.muscle_mass_kg).toFixed(1) : null
     const days = Math.round((new Date() - new Date(first.date)) / 86400000)
-    return { current: last, starting: first, weightChange, bfChange, muscleChange, count: metrics.length, days }
+    return { current: last, weightChange, bfChange, muscleChange, count: metrics.length, days }
   }, [metrics])
 
   const weightData = metrics.filter(m => m.weight_kg != null).map(m => ({ date: format(new Date(m.date), 'MMM d'), weight: Number(m.weight_kg) }))
   const bfData = metrics.filter(m => m.body_fat_pct != null).map(m => ({ date: format(new Date(m.date), 'MMM d'), bf: Number(m.body_fat_pct) }))
 
-  const inputClass = "w-full bg-surface border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/10 transition-all"
+  const inputCls = "w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-bold text-[26px] text-text leading-tight">Body Metrics</h1>
-          <p className="text-text-secondary text-[14px] mt-0.5">Track your body composition</p>
-        </div>
+    <>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Body Metrics</h1>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl text-[14px] font-semibold hover:bg-accent-hover transition-colors shadow-sm"
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors animate-press"
         >
-          <Plus size={16} /> Log Entry
+          <Plus className="w-4 h-4" /> Log Entry
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats grid */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <MetricCard label="Current Weight" value={stats.current.weight_kg ? formatNumber(stats.current.weight_kg) : '—'} unit="kg" trend={stats.weightChange} />
-          <MetricCard label="Body Fat" value={stats.current.body_fat_pct ? formatNumber(stats.current.body_fat_pct) : '—'} unit="%" trend={stats.bfChange} />
-          <MetricCard label="Muscle Mass" value={stats.current.muscle_mass_kg ? formatNumber(stats.current.muscle_mass_kg) : '—'} unit="kg" trend={stats.muscleChange} />
-          <MetricCard label="Entries" value={stats.count} subtitle={`— ${stats.days} days`} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MetricCard
+            label="Current Weight"
+            value={stats.current.weight_kg ? formatNumber(stats.current.weight_kg) : '—'}
+            unit="kg"
+            change={stats.weightChange ? `${Number(stats.weightChange) > 0 ? '+' : ''}${stats.weightChange} kg` : undefined}
+            positiveIsGood={false}
+          />
+          <MetricCard
+            label="Body Fat"
+            value={stats.current.body_fat_pct ? formatNumber(stats.current.body_fat_pct) : '—'}
+            unit="%"
+            change={stats.bfChange ? `${Number(stats.bfChange) > 0 ? '+' : ''}${stats.bfChange}%` : undefined}
+            positiveIsGood={false}
+          />
+          <MetricCard
+            label="Muscle Mass"
+            value={stats.current.muscle_mass_kg ? formatNumber(stats.current.muscle_mass_kg) : '—'}
+            unit="kg"
+            change={stats.muscleChange ? `${Number(stats.muscleChange) > 0 ? '+' : ''}${stats.muscleChange} kg` : undefined}
+            positiveIsGood={true}
+          />
+          <MetricCard
+            label="Entries"
+            value={stats.count}
+            change={`— ${stats.days} days`}
+          />
         </div>
       )}
 
-      {/* Log form */}
-      {showForm && (
-        <div className="card p-6 mb-6">
-          <h3 className="text-text font-bold text-[16px] mb-5">New Entry</h3>
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <label className="block">
-                <span className="text-text-secondary text-[12px] mb-1.5 block font-semibold">Date</span>
-                <input type="date" value={form.date} onChange={e => set('date', e.target.value)} required className={inputClass} />
-              </label>
-              <label className="block">
-                <span className="text-text-secondary text-[12px] mb-1.5 block font-semibold">Weight (kg)</span>
-                <input type="number" step="any" value={form.weight_kg} onChange={e => set('weight_kg', e.target.value)} className={inputClass} />
-              </label>
-              <label className="block">
-                <span className="text-text-secondary text-[12px] mb-1.5 block font-semibold">Body Fat %</span>
-                <input type="number" step="any" value={form.body_fat_pct} onChange={e => set('body_fat_pct', e.target.value)} className={inputClass} />
-              </label>
-              <label className="block">
-                <span className="text-text-secondary text-[12px] mb-1.5 block font-semibold">Muscle Mass (kg)</span>
-                <input type="number" step="any" value={form.muscle_mass_kg} onChange={e => set('muscle_mass_kg', e.target.value)} className={inputClass} />
-              </label>
-            </div>
-            <label className="block mb-5">
-              <span className="text-text-secondary text-[12px] mb-1.5 block font-semibold">Notes (optional)</span>
-              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className={`${inputClass} resize-none`} />
-            </label>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setShowForm(false)} className="px-5 py-3 bg-surface border border-border rounded-xl text-[14px] text-text font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" className="px-6 py-3 bg-accent text-white rounded-xl text-[14px] font-semibold hover:bg-accent-hover transition-colors shadow-sm">
-                Save Entry
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Charts */}
+      {/* Weight chart */}
       {weightData.length >= 2 && (
-        <div className="space-y-6 mb-6">
-          <div className="card p-6">
-            <p className="section-header mb-5">Weight Over Time</p>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weightData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={45} domain={['dataMin - 1', 'dataMax + 1']} />
-                  <Tooltip contentStyle={chartTooltipStyle} />
-                  <Line type="monotone" dataKey="weight" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3, fill: '#10B981', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#10B981' }} name="Weight (kg)" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="bg-card rounded-lg border border-border p-5">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Weight Over Time</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weightData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={40} domain={['dataMin - 1', 'dataMax + 1']} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="weight" stroke="hsl(160,84%,39%)" strokeWidth={2} dot={{ r: 2, fill: 'hsl(160,84%,39%)', strokeWidth: 0 }} activeDot={{ r: 4, fill: 'hsl(160,84%,39%)' }} name="Weight (kg)" />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          {bfData.length >= 2 && (
-            <div className="card p-6">
-              <p className="section-header mb-5">Body Fat % Over Time</p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={bfData}>
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={42} domain={['dataMin - 1', 'dataMax + 1']} />
-                    <Tooltip contentStyle={chartTooltipStyle} />
-                    <Line type="monotone" dataKey="bf" stroke="#6366F1" strokeWidth={2.5} dot={{ r: 3, fill: '#6366F1', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#6366F1' }} name="Body Fat %" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* Body fat chart */}
+      {bfData.length >= 2 && (
+        <div className="bg-card rounded-lg border border-border p-5">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Body Fat % Over Time</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={bfData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={40} domain={['dataMin - 1', 'dataMax + 1']} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="bf" stroke="hsl(239,84%,67%)" strokeWidth={2} dot={{ r: 2, fill: 'hsl(239,84%,67%)', strokeWidth: 0 }} activeDot={{ r: 4, fill: 'hsl(239,84%,67%)' }} name="Body Fat %" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* History table */}
       {metrics.length === 0 ? (
-        <EmptyState message="No body metrics logged yet" actionLabel="+ Log your first entry" onAction={() => setShowForm(true)} />
+        <div className="bg-card rounded-lg border border-border py-16 text-center">
+          <p className="text-sm text-muted-foreground">No body metrics logged yet</p>
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <p className="section-header">History</p>
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">History</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-gray-50/50">
-                  <th className="text-left px-6 py-3.5 text-[11px] font-bold text-text-secondary uppercase tracking-wider">Date</th>
-                  <th className="text-right px-5 py-3.5 text-[11px] font-bold text-text-secondary uppercase tracking-wider">Weight</th>
-                  <th className="text-right px-5 py-3.5 text-[11px] font-bold text-text-secondary uppercase tracking-wider">Body Fat</th>
-                  <th className="text-right px-5 py-3.5 text-[11px] font-bold text-text-secondary uppercase tracking-wider">Muscle</th>
-                  <th className="text-left px-5 py-3.5 text-[11px] font-bold text-text-secondary uppercase tracking-wider">Notes</th>
-                  <th className="px-4 py-3.5 w-12"></th>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider px-4 py-3">Date</th>
+                  <th className="text-right font-semibold text-muted-foreground text-xs uppercase tracking-wider px-4 py-3">Weight</th>
+                  <th className="text-right font-semibold text-muted-foreground text-xs uppercase tracking-wider px-4 py-3">Body Fat</th>
+                  <th className="text-right font-semibold text-muted-foreground text-xs uppercase tracking-wider px-4 py-3">Muscle</th>
+                  <th className="text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider px-4 py-3">Notes</th>
+                  <th className="px-4 py-3 w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {[...metrics].reverse().map(m => (
-                  <tr key={m.id} className="group hover:bg-gray-50/70 transition-colors">
-                    <td className="px-6 py-4 text-text text-[14px] font-medium">{format(new Date(m.date), 'MMM d, yyyy')}</td>
-                    <td className="px-5 py-4 text-right text-text tabular-nums text-[14px] font-medium">{m.weight_kg ? `${formatNumber(m.weight_kg)} kg` : '—'}</td>
-                    <td className="px-5 py-4 text-right text-text tabular-nums text-[14px]">{m.body_fat_pct ? `${formatNumber(m.body_fat_pct)}%` : '—'}</td>
-                    <td className="px-5 py-4 text-right text-text tabular-nums text-[14px]">{m.muscle_mass_kg ? `${formatNumber(m.muscle_mass_kg)} kg` : '—'}</td>
-                    <td className="px-5 py-4 text-text-secondary text-[13px] truncate max-w-[200px]">{m.notes || '—'}</td>
-                    <td className="px-4 py-4">
+              <tbody>
+                {[...metrics].reverse().slice(0, 10).map((m, i) => (
+                  <tr key={m.id} className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors group ${i % 2 === 1 ? 'bg-muted/20' : ''}`}>
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{format(new Date(m.date), 'MMM dd, yyyy')}</td>
+                    <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground">{m.weight_kg ? `${formatNumber(m.weight_kg)} kg` : '—'}</td>
+                    <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground">{m.body_fat_pct ? `${formatNumber(m.body_fat_pct)}%` : '—'}</td>
+                    <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground">{m.muscle_mass_kg ? `${formatNumber(m.muscle_mass_kg)} kg` : '—'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground truncate max-w-[200px]">{m.notes || '—'}</td>
+                    <td className="px-4 py-3">
                       <button
                         onClick={() => deleteMetric(m.id)}
-                        className="p-2 rounded-lg text-text-secondary/20 hover:text-danger hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                        className="p-1 rounded-md text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -192,6 +182,42 @@ export default function BodyMetrics() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Log entry modal */}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Log Body Metrics">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground mb-1 block">Date</span>
+            <input type="date" value={form.date} onChange={e => set('date', e.target.value)} required className={inputCls} />
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground mb-1 block">Weight (kg)</span>
+              <input type="number" step="any" value={form.weight_kg} onChange={e => set('weight_kg', e.target.value)} className={inputCls} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground mb-1 block">Body Fat %</span>
+              <input type="number" step="any" value={form.body_fat_pct} onChange={e => set('body_fat_pct', e.target.value)} className={inputCls} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground mb-1 block">Muscle (kg)</span>
+              <input type="number" step="any" value={form.muscle_mass_kg} onChange={e => set('muscle_mass_kg', e.target.value)} className={inputCls} />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground mb-1 block">Notes</span>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className={`${inputCls} h-auto py-2 resize-none`} />
+          </label>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={() => setShowForm(false)} className="flex-1 h-10 rounded-md border border-border bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors">
+              Cancel
+            </button>
+            <button type="submit" className="flex-1 h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors animate-press">
+              Save Entry
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </>
   )
 }

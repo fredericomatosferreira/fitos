@@ -7,11 +7,25 @@ import { useGoals } from '../hooks/useGoals'
 import { calcMacros, mealTypeLabel, MEAL_TYPES, formatNumber } from '../lib/utils'
 import DateSelector from '../components/DateSelector'
 import MacroRing from '../components/MacroRing'
-import { Plus, Utensils, Dumbbell, Scale } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import PBBadge from '../components/PBBadge'
+import { Plus, UtensilsCrossed, Dumbbell, Scale, TrendingDown } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { subDays, format } from 'date-fns'
 
-const chartTooltipStyle = { background: '#FFFFFF', border: '1px solid #E2E5EB', borderRadius: 10, fontSize: 13, padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
+const MACRO_COLORS = {
+  calories: 'hsl(160,84%,39%)',
+  protein: 'hsl(239,84%,67%)',
+  carbs: 'hsl(38,92%,50%)',
+  fat: 'hsl(350,89%,60%)',
+}
+
+const tooltipStyle = {
+  background: '#fff',
+  border: '1px solid hsl(214 20% 90%)',
+  borderRadius: 8,
+  fontSize: 13,
+  padding: '8px 12px',
+}
 
 export default function Dashboard() {
   const [date, setDate] = useState(new Date())
@@ -57,7 +71,6 @@ export default function Dashboard() {
     ? (Number(latestWeight.weight_kg) - Number(firstWeight.weight_kg)).toFixed(1)
     : null
 
-  // Group sets by exercise for workout summary
   const sessionSummary = useMemo(() => {
     if (sessions.length === 0) return null
     const s = sessions[0]
@@ -81,33 +94,34 @@ export default function Dashboard() {
   }, [sessions])
 
   return (
-    <div>
+    <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-bold text-[26px] text-text leading-tight">Dashboard</h1>
-          <p className="text-text-secondary text-[14px] mt-0.5">Your daily overview</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Your daily overview</p>
         </div>
         <DateSelector date={date} onChange={setDate} />
       </div>
 
       {/* MACROS */}
-      <div className="card p-8 mb-6">
-        <p className="section-header mb-6">Macros</p>
-        <div className="flex items-center justify-center gap-10 sm:gap-16 flex-wrap">
-          <MacroRing label="Calories" value={totals.calories} goal={goals.calories} size={140} strokeWidth={10} />
-          <MacroRing label="Protein" value={totals.protein} goal={goals.protein_g} color="var(--color-protein)" size={120} />
-          <MacroRing label="Carbs" value={totals.carbs} goal={goals.carbs_g} color="var(--color-carbs)" size={120} />
-          <MacroRing label="Fat" value={totals.fat} goal={goals.fat_g} color="var(--color-fat)" size={120} />
+      <div className="bg-card rounded-lg border border-border p-6">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-6">Macros</p>
+        <div className="flex items-center justify-around flex-wrap gap-6">
+          <MacroRing label="Calories" value={totals.calories} goal={goals.calories} color={MACRO_COLORS.calories} size={120} unit="kcal" />
+          <MacroRing label="Protein" value={totals.protein} goal={goals.protein_g} color={MACRO_COLORS.protein} size={110} unit="g" />
+          <MacroRing label="Carbs" value={totals.carbs} goal={goals.carbs_g} color={MACRO_COLORS.carbs} size={110} unit="g" />
+          <MacroRing label="Fat" value={totals.fat} goal={goals.fat_g} color={MACRO_COLORS.fat} size={110} unit="g" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+      {/* Two-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* TODAY'S MEALS */}
-        <div className="lg:col-span-3 card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <p className="section-header">Today&apos;s Meals</p>
-            <Utensils size={18} className="text-text-secondary/30" />
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Today&apos;s Meals</p>
+            <UtensilsCrossed className="w-4 h-4 text-muted-foreground opacity-30" />
           </div>
           <div className="divide-y divide-border">
             {MEAL_TYPES.map(type => {
@@ -115,15 +129,15 @@ export default function Dashboard() {
               if (items.length === 0) return null
               const mealCals = items.reduce((sum, l) => sum + calcMacros(l.food, l.quantity_g).calories, 0)
               return (
-                <div key={type} className="px-6 py-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-text font-bold text-[14px]">{mealTypeLabel(type)}</p>
-                    <span className="text-text-secondary text-[13px] tabular-nums font-medium">{formatNumber(mealCals, 0)} kcal</span>
+                <div key={type} className="px-6 py-3.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-sm font-semibold text-foreground">{mealTypeLabel(type)}</p>
+                    <span className="text-sm text-muted-foreground tabular-nums">{formatNumber(mealCals, 0)} kcal</span>
                   </div>
                   {items.map(log => (
-                    <div key={log.id} className="flex items-center justify-between py-1.5 pl-3">
-                      <span className="text-text-secondary text-[14px]">{log.food.name}</span>
-                      <span className="text-text-secondary tabular-nums text-[13px]">{formatNumber(log.quantity_g, 0)}g</span>
+                    <div key={log.id} className="flex items-center justify-between py-1 pl-4">
+                      <span className="text-sm text-muted-foreground">{log.food.name}</span>
+                      <span className="text-sm text-muted-foreground tabular-nums">{formatNumber(log.quantity_g, 0)}g</span>
                     </div>
                   ))}
                 </div>
@@ -131,38 +145,34 @@ export default function Dashboard() {
             })}
             {logs.length === 0 && (
               <div className="px-6 py-14 text-center">
-                <p className="text-text-secondary text-[14px]">No meals logged yet</p>
+                <p className="text-sm text-muted-foreground">No meals logged yet</p>
               </div>
             )}
           </div>
         </div>
 
         {/* TODAY'S WORKOUT */}
-        <div className="lg:col-span-2 card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <p className="section-header">Today&apos;s Workout</p>
-            <Dumbbell size={18} className="text-text-secondary/30" />
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Today&apos;s Workout</p>
+            <Dumbbell className="w-4 h-4 text-muted-foreground opacity-30" />
           </div>
           {!sessionSummary ? (
             <div className="px-6 py-14 text-center">
-              <p className="text-text-secondary text-[14px]">Rest day</p>
+              <p className="text-sm text-muted-foreground">Rest day</p>
             </div>
           ) : (
             <div className="p-6">
-              <p className="text-text font-bold text-[17px]">{sessionSummary.name}</p>
-              <p className="text-text-secondary text-[13px] mb-4">{sessionSummary.exerciseCount} exercises · {sessionSummary.totalSets} sets</p>
+              <p className="font-bold text-lg text-foreground">{sessionSummary.name}</p>
+              <p className="text-sm text-muted-foreground mb-4">{sessionSummary.exerciseCount} exercises · {sessionSummary.totalSets} sets</p>
               <div className="space-y-2.5">
                 {sessionSummary.exercises.map(g => (
-                  <div key={g.exercise?.id || 'unknown'} className="flex items-center justify-between py-2.5 px-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-text text-[14px] font-semibold">{g.exercise?.name || 'Unknown'}</span>
-                      {g.hasPb && (
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-600">
-                          ⭐ PB
-                        </span>
-                      )}
+                  <div key={g.exercise?.id || 'unknown'} className="flex items-center justify-between bg-muted/50 rounded-lg px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">{g.exercise?.name || 'Unknown'}</span>
+                      {g.hasPb && <PBBadge />}
                     </div>
-                    <span className="text-text-secondary text-[13px] tabular-nums font-medium">{g.sets.length} sets · best {formatNumber(g.bestWeight)}kg</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">{g.sets.length} sets · best {formatNumber(g.bestWeight)}kg</span>
                   </div>
                 ))}
               </div>
@@ -172,64 +182,63 @@ export default function Dashboard() {
       </div>
 
       {/* WEIGHT CHART */}
-      <div className="card p-6 mb-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex items-center justify-between mb-2">
-          <p className="section-header">Weight — Last 30 Days</p>
-          <Scale size={18} className="text-text-secondary/30" />
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Weight — Last 30 Days</p>
+          <Scale className="w-4 h-4 text-muted-foreground opacity-30" />
         </div>
         <div className="flex items-baseline gap-3 mb-5">
           {latestWeight ? (
             <>
-              <span className="text-text font-bold text-[30px] tabular-nums leading-none">{formatNumber(latestWeight.weight_kg)} kg</span>
+              <span className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(latestWeight.weight_kg)} kg</span>
               {weightChange && (
-                <span className={`text-[14px] font-semibold tabular-nums ${Number(weightChange) <= 0 ? 'text-accent' : 'text-danger'}`}>
-                  ~{Number(weightChange) > 0 ? '+' : ''}{weightChange} kg
+                <span className={`text-sm font-medium tabular-nums flex items-center gap-1 ${Number(weightChange) <= 0 ? 'text-chart-emerald' : 'text-destructive'}`}>
+                  {Number(weightChange) <= 0 && <TrendingDown className="w-3.5 h-3.5" />}
+                  {Number(weightChange) > 0 ? '+' : ''}{weightChange} kg
                 </span>
               )}
             </>
           ) : (
-            <span className="text-text-secondary text-[14px]">No data yet</span>
+            <span className="text-sm text-muted-foreground">No data yet</span>
           )}
         </div>
         {weightData.length >= 2 ? (
-          <div className="h-52">
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weightData}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={42} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                <Tooltip contentStyle={chartTooltipStyle} />
-                <Line type="monotone" dataKey="weight" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3, fill: '#10B981', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#10B981' }} name="Weight (kg)" />
-              </LineChart>
+              <AreaChart data={weightData}>
+                <defs>
+                  <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(160,84%,39%)" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="hsl(160,84%,39%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={40} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Area type="monotone" dataKey="weight" stroke="hsl(160,84%,39%)" strokeWidth={2} fill="url(#weightGradient)" dot={{ r: 2.5, fill: 'hsl(160,84%,39%)', strokeWidth: 0 }} name="Weight (kg)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-36 flex items-center justify-center">
-            <p className="text-text-secondary text-[14px]">Not enough data</p>
+          <div className="h-48 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">Not enough data</p>
           </div>
         )}
       </div>
 
-      {/* Quick action buttons */}
+      {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => navigate('/nutrition')}
-          className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl text-[14px] font-semibold hover:bg-accent-hover transition-colors shadow-sm"
-        >
-          <Plus size={16} /> Log Meal
+        <button onClick={() => navigate('/nutrition')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-colors">
+          <Plus className="w-4 h-4" /> Log Meal
         </button>
-        <button
-          onClick={() => navigate('/workouts')}
-          className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-[14px] text-text font-semibold hover:bg-gray-50 hover:border-border-hover transition-colors shadow-sm"
-        >
-          <Plus size={16} /> Log Workout
+        <button onClick={() => navigate('/workouts')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors">
+          <Plus className="w-4 h-4" /> Log Workout
         </button>
-        <button
-          onClick={() => navigate('/body')}
-          className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-[14px] text-text font-semibold hover:bg-gray-50 hover:border-border-hover transition-colors shadow-sm"
-        >
-          <Plus size={16} /> Log Weight
+        <button onClick={() => navigate('/body')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors">
+          <Plus className="w-4 h-4" /> Log Weight
         </button>
       </div>
-    </div>
+    </>
   )
 }

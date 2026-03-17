@@ -1,34 +1,29 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
 export default function Modal({ open, onClose, title, children }) {
+  const ref = useRef()
+
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => { document.body.style.overflow = '' }
-  }, [open])
+    if (!open) return
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open, onClose])
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" style={{ boxShadow: 'var(--shadow-modal)' }}>
-        <div className="sticky top-0 bg-surface border-b border-border px-6 py-4 flex items-center justify-between z-10 rounded-t-2xl">
-          <h3 className="text-text font-bold text-[17px]">{title}</h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-text hover:bg-gray-100 transition-all duration-150"
-          >
-            <X size={18} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={onClose} />
+      <div ref={ref} className="relative bg-card rounded-lg border border-border shadow-lg w-full max-w-md p-6 animate-fade-in">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground">{title}</h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-muted transition-colors">
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
-        <div className="p-6">
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   )

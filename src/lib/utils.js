@@ -19,9 +19,8 @@ export function calcMacros(food, quantityG) {
 export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 
 export const MUSCLE_GROUPS = [
-  'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
-  'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes',
-  'Calves', 'Full Body', 'Cardio', 'Other'
+  'Chest', 'Back', 'Shoulders', 'Arms', 'Legs',
+  'Core', 'Full Body', 'Cardio'
 ]
 
 export function mealTypeLabel(type) {

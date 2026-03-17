@@ -3,10 +3,22 @@ import { useMealLogs, useFoods } from '../hooks/useNutrition'
 import { useGoals } from '../hooks/useGoals'
 import { MEAL_TYPES, mealTypeLabel, calcMacros, formatNumber } from '../lib/utils'
 import DateSelector from '../components/DateSelector'
-import MacroRing from '../components/MacroRing'
 import FoodSearchModal from '../components/FoodSearchModal'
 import { Plus, Trash2 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+
+const PIE_COLORS = {
+  Protein: 'hsl(239,84%,67%)',
+  Carbs: 'hsl(38,92%,50%)',
+  Fat: 'hsl(350,89%,60%)',
+}
+
+const BAR_COLORS = {
+  Calories: 'bg-chart-emerald',
+  Protein: 'bg-chart-indigo',
+  Carbs: 'bg-chart-amber',
+  Fat: 'bg-destructive',
+}
 
 export default function Nutrition() {
   const [date, setDate] = useState(new Date())
@@ -40,9 +52,9 @@ export default function Nutrition() {
   }, [logs])
 
   const pieData = [
-    { name: 'Protein', value: totals.protein * 4, color: '#0891B2' },
-    { name: 'Carbs', value: totals.carbs * 4, color: '#D97706' },
-    { name: 'Fat', value: totals.fat * 9, color: '#DB2777' },
+    { name: 'Protein', value: totals.protein * 4, color: PIE_COLORS.Protein },
+    { name: 'Carbs', value: totals.carbs * 4, color: PIE_COLORS.Carbs },
+    { name: 'Fat', value: totals.fat * 9, color: PIE_COLORS.Fat },
   ].filter(d => d.value > 0)
 
   const handleAddFood = async (food, quantity) => {
@@ -58,83 +70,76 @@ export default function Nutrition() {
     setModalOpen(true)
   }
 
+  const progressBars = [
+    { label: 'Calories', current: totals.calories, goal: goals.calories, unit: 'kcal', color: BAR_COLORS.Calories },
+    { label: 'Protein', current: totals.protein, goal: goals.protein_g, unit: 'g', color: BAR_COLORS.Protein },
+    { label: 'Carbs', current: totals.carbs, goal: goals.carbs_g, unit: 'g', color: BAR_COLORS.Carbs },
+    { label: 'Fat', current: totals.fat, goal: goals.fat_g, unit: 'g', color: BAR_COLORS.Fat },
+  ]
+
   return (
-    <div className="pb-20">
+    <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-bold text-[26px] text-text leading-tight">Nutrition</h1>
-          <p className="text-text-secondary text-[14px] mt-0.5">Track your daily intake</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Nutrition</h1>
         <DateSelector date={date} onChange={setDate} />
       </div>
 
-      {/* Macro rings */}
-      <div className="card p-8 mb-6">
-        <p className="section-header mb-6">Macros</p>
-        <div className="flex items-center justify-center gap-10 sm:gap-16 flex-wrap">
-          <MacroRing label="Calories" value={totals.calories} goal={goals.calories} size={140} strokeWidth={10} />
-          <MacroRing label="Protein" value={totals.protein} goal={goals.protein_g} color="var(--color-protein)" size={120} />
-          <MacroRing label="Carbs" value={totals.carbs} goal={goals.carbs_g} color="var(--color-carbs)" size={120} />
-          <MacroRing label="Fat" value={totals.fat} goal={goals.fat_g} color="var(--color-fat)" size={120} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Meals column */}
-        <div className="lg:col-span-2 space-y-5">
-          {MEAL_TYPES.map(type => (
-            <div key={type} className="card overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="text-text font-bold text-[15px]">{mealTypeLabel(type)}</h3>
-                <button
-                  onClick={() => openModal(type)}
-                  className="flex items-center gap-1.5 text-accent text-[13px] font-semibold hover:text-accent-hover transition-colors"
-                >
-                  <Plus size={14} /> Add Food
-                </button>
-              </div>
-              {logsByMeal[type].length === 0 ? (
-                <div className="px-6 py-10 text-center">
-                  <p className="text-text-secondary text-[14px]">No foods logged</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {logsByMeal[type].map(log => {
-                    const m = calcMacros(log.food, log.quantity_g)
-                    return (
-                      <div key={log.id} className="px-6 py-3.5 flex items-center gap-4 group">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-text text-[14px] font-medium truncate">{log.food.name}</p>
-                          <p className="text-text-secondary text-[12px] tabular-nums">{formatNumber(log.quantity_g, 0)}g</p>
-                        </div>
-                        <div className="flex items-center gap-3 text-[12px] tabular-nums shrink-0 font-medium">
-                          <span className="text-text-secondary">{formatNumber(m.calories, 0)} cal</span>
-                          <span className="text-protein">{formatNumber(m.protein)}p</span>
-                          <span className="text-carbs">{formatNumber(m.carbs)}c</span>
-                          <span className="text-fat">{formatNumber(m.fat)}f</span>
-                        </div>
-                        <button
-                          onClick={() => deleteMealLog(log.id)}
-                          className="text-text-secondary/20 hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+      {/* Meal sections */}
+      {MEAL_TYPES.map(type => {
+        const items = logsByMeal[type]
+        const mealCals = items.reduce((sum, l) => sum + calcMacros(l.food, l.quantity_g).calories, 0)
+        return (
+          <div key={type} className="bg-card rounded-lg border border-border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-foreground">{mealTypeLabel(type)}</h3>
+              <span className="text-sm text-muted-foreground tabular-nums">{items.length > 0 ? `${formatNumber(mealCals, 0)} kcal` : ''}</span>
             </div>
-          ))}
-        </div>
+            {items.length > 0 && (
+              <div className="divide-y divide-border">
+                {items.map(log => {
+                  const m = calcMacros(log.food, log.quantity_g)
+                  return (
+                    <div key={log.id} className="flex items-center py-2 group">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-foreground">{log.food.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{formatNumber(log.quantity_g, 0)}g</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs tabular-nums shrink-0">
+                        <span className="text-muted-foreground">{formatNumber(m.calories, 0)} kcal</span>
+                        <span className="text-secondary font-medium">P {formatNumber(m.protein, 0)}g</span>
+                        <span className="text-accent font-medium">C {formatNumber(m.carbs, 0)}g</span>
+                        <span className="text-chart-rose font-medium">F {formatNumber(m.fat, 0)}g</span>
+                      </div>
+                      <button
+                        onClick={() => deleteMealLog(log.id)}
+                        className="ml-3 text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <button
+              onClick={() => openModal(type)}
+              className="flex items-center gap-1 text-primary text-xs font-medium mt-2 hover:opacity-70 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add food
+            </button>
+          </div>
+        )
+      })}
 
-        {/* Pie chart column */}
-        <div className="card p-6 h-fit">
-          <p className="section-header mb-5">Macro Breakdown</p>
+      {/* Bottom: Pie chart + Progress bars */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Macro Breakdown */}
+        <div className="bg-card rounded-lg border border-border p-5">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Macro Breakdown</p>
           {pieData.length > 0 ? (
             <>
-              <div className="h-56">
+              <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -142,8 +147,8 @@ export default function Nutrition() {
                       dataKey="value"
                       cx="50%"
                       cy="50%"
-                      innerRadius={58}
-                      outerRadius={85}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={3}
                       strokeWidth={0}
                     >
@@ -154,46 +159,46 @@ export default function Nutrition() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-3.5 mt-5">
+              <div className="flex items-center justify-center gap-5 mt-2">
                 {[
-                  { label: 'Protein', val: totals.protein, unit: 'g', color: 'bg-protein' },
-                  { label: 'Carbs', val: totals.carbs, unit: 'g', color: 'bg-carbs' },
-                  { label: 'Fat', val: totals.fat, unit: 'g', color: 'bg-fat' },
+                  { name: 'Protein', val: totals.protein, color: 'bg-chart-indigo' },
+                  { name: 'Carbs', val: totals.carbs, color: 'bg-chart-amber' },
+                  { name: 'Fat', val: totals.fat, color: 'bg-chart-rose' },
                 ].map(m => (
-                  <div key={m.label} className="flex items-center gap-3 text-[14px]">
-                    <span className={`w-3 h-3 rounded-full ${m.color}`} />
-                    <span className="text-text-secondary flex-1 font-medium">{m.label}</span>
-                    <span className="text-text font-semibold tabular-nums">{formatNumber(m.val)}{m.unit}</span>
+                  <div key={m.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`w-2 h-2 rounded-full ${m.color}`} />
+                    {m.name} {formatNumber(m.val, 0)}g
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="py-20 text-center">
-              <p className="text-text-secondary text-[14px]">No data yet</p>
-            </div>
+            <div className="py-16 text-center text-sm text-muted-foreground">No data yet</div>
           )}
         </div>
-      </div>
 
-      {/* Sticky daily totals bar */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 md:left-[240px] right-0 bg-surface/95 backdrop-blur-sm border-t border-border px-6 py-3.5 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-        <div className="max-w-[1160px] mx-auto flex items-center justify-around tabular-nums">
-          {[
-            { label: 'Calories', value: totals.calories, goal: goals.calories, color: 'text-text' },
-            { label: 'Protein', value: totals.protein, goal: goals.protein_g, color: 'text-protein' },
-            { label: 'Carbs', value: totals.carbs, goal: goals.carbs_g, color: 'text-carbs' },
-            { label: 'Fat', value: totals.fat, goal: goals.fat_g, color: 'text-fat' },
-          ].map(m => (
-            <div key={m.label} className="text-center">
-              <div className="text-[14px]">
-                <span className={`${m.color} font-bold`}>{formatNumber(m.value, 0)}</span>
-                <span className="text-text-secondary/30 mx-1">/</span>
-                <span className="text-text-secondary font-medium">{formatNumber(m.goal, 0)}</span>
-              </div>
-              <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider mt-0.5">{m.label}</p>
-            </div>
-          ))}
+        {/* Daily Totals vs Goals */}
+        <div className="bg-card rounded-lg border border-border p-5">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Daily Totals vs Goals</p>
+          <div className="space-y-4">
+            {progressBars.map(bar => {
+              const pct = Math.min((bar.current / (bar.goal || 1)) * 100, 100)
+              return (
+                <div key={bar.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-foreground">{bar.label}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{formatNumber(bar.current, 0)} / {formatNumber(bar.goal, 0)} {bar.unit}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full ${bar.color} transition-all duration-500`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -203,6 +208,6 @@ export default function Nutrition() {
         foods={foods}
         onSelect={handleAddFood}
       />
-    </div>
+    </>
   )
 }

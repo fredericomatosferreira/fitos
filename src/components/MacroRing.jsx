@@ -1,13 +1,16 @@
-import { formatNumber } from '../lib/utils'
-
-export default function MacroRing({ label, value, goal, color = 'var(--color-accent)', size = 130, strokeWidth = 10 }) {
+export default function MacroRing({ value = 0, goal = 100, label, color, size = 100, unit = 'g' }) {
+  const strokeWidth = 8
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  const pct = goal > 0 ? Math.min(value / goal, 1) : 0
-  const offset = circumference - pct * circumference
+  const pct = Math.min(value / (goal || 1), 1)
+  const offset = circumference * (1 - pct)
+
+  // Scale inner text with ring size
+  const valueFontSize = Math.round(size * 0.22)
+  const goalFontSize = Math.round(size * 0.1)
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle
@@ -15,9 +18,8 @@ export default function MacroRing({ label, value, goal, color = 'var(--color-acc
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#E5E7EB"
+            stroke="hsl(210 20% 94%)"
             strokeWidth={strokeWidth}
-            opacity={0.6}
           />
           <circle
             cx={size / 2}
@@ -26,22 +28,22 @@ export default function MacroRing({ label, value, goal, color = 'var(--color-acc
             fill="none"
             stroke={color}
             strokeWidth={strokeWidth}
+            strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
+            className="transition-all duration-500 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-text font-bold tabular-nums leading-none" style={{ fontSize: size * 0.24 }}>
-            {formatNumber(value, 0)}
+          <span className="font-bold text-foreground tabular-nums leading-none" style={{ fontSize: valueFontSize }}>
+            {Math.round(value)}
           </span>
-          <span className="text-text-secondary text-[11px] tabular-nums mt-1.5 font-medium">
-            / {formatNumber(goal, 0)}{label === 'Calories' ? 'kcal' : 'g'}
+          <span className="text-muted-foreground mt-1 tabular-nums" style={{ fontSize: goalFontSize }}>
+            / {goal}{unit === 'kcal' ? 'kcal' : unit}
           </span>
         </div>
       </div>
-      <p className="text-text-secondary text-[13px] font-semibold">{label}</p>
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
     </div>
   )
 }
