@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useWorkoutSessions, useExercises, useExerciseHistory } from '../hooks/useWorkouts'
+import { useWorkoutTemplates } from '../hooks/useWorkoutTemplates'
 import { supabase } from '../lib/supabase'
 import { formatNumber } from '../lib/utils'
 import DateSelector from '../components/DateSelector'
 import Modal from '../components/Modal'
 import PBBadge from '../components/PBBadge'
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { format } from 'date-fns'
 
@@ -91,7 +92,9 @@ export default function Workouts() {
   const [date, setDate] = useState(new Date())
   const { sessions, addSession, deleteSession, addSet, deleteSet } = useWorkoutSessions(date)
   const { exercises } = useExercises()
+  const { templates } = useWorkoutTemplates()
   const [newSessionOpen, setNewSessionOpen] = useState(false)
+  const [templateModalOpen, setTemplateModalOpen] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [addingToSession, setAddingToSession] = useState(null)
   const [expandedExercise, setExpandedExercise] = useState(null)
@@ -102,6 +105,25 @@ export default function Workouts() {
     await addSession({ name: sessionName.trim() })
     setSessionName('')
     setNewSessionOpen(false)
+  }
+
+  const handleStartFromTemplate = async (template) => {
+    const result = await addSession({ name: template.name })
+    if (!result?.data) return
+    const sessionId = result.data.id
+    const items = (template.workout_template_items || []).sort((a, b) => a.sort_order - b.sort_order)
+    for (const item of items) {
+      for (let s = 1; s <= (item.default_sets || 3); s++) {
+        await addSet(sessionId, {
+          exercise_id: item.exercise_id,
+          set_number: s,
+          reps: item.default_reps || 10,
+          weight_kg: 0,
+          is_pb: false,
+        })
+      }
+    }
+    setTemplateModalOpen(false)
   }
 
   const handleAddSet = async (sessionId, set) => {
@@ -143,6 +165,14 @@ export default function Workouts() {
         <h1 className="text-2xl font-bold text-foreground">Workouts</h1>
         <div className="flex items-center gap-3">
           <DateSelector date={date} onChange={setDate} />
+          {templates.length > 0 && (
+            <button
+              onClick={() => setTemplateModalOpen(true)}
+              className="flex items-center gap-2 h-10 px-4 rounded-md border border-secondary text-secondary text-sm font-medium hover:bg-secondary/10 transition-colors"
+            >
+              <BookOpen className="w-4 h-4" /> From Template
+            </button>
+          )}
           <button
             onClick={() => setNewSessionOpen(true)}
             className="flex items-center gap-2 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors animate-press"
@@ -308,6 +338,33 @@ export default function Workouts() {
             Create Session
           </button>
         </form>
+      </Modal>
+
+      <Modal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} title="Start from Saved Workout">
+        <p className="text-sm text-muted-foreground mb-4">
+          A new session will be created with all exercises and sets pre-filled.
+        </p>
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {templates.map(template => {
+            const items = (template.workout_template_items || []).sort((a, b) => a.sort_order - b.sort_order)
+            const totalSets = items.reduce((sum, i) => sum + (i.default_sets || 0), 0)
+            return (
+              <button
+                key={template.id}
+                onClick={() => handleStartFromTemplate(template)}
+                className="w-full text-left bg-muted/30 hover:bg-muted rounded-lg border border-border p-3 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-sm text-foreground">{template.name}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{items.length} exercises · {totalSets} sets</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {items.map(i => i.exercise?.name).filter(Boolean).join(', ')}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </Modal>
     </>
   )

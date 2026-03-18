@@ -6,7 +6,9 @@ import Dashboard from './pages/Dashboard'
 import Nutrition from './pages/Nutrition'
 import FoodLibrary from './pages/FoodLibrary'
 import Workouts from './pages/Workouts'
+import WorkoutTemplates from './pages/WorkoutTemplates'
 import ExerciseLibrary from './pages/ExerciseLibrary'
+import MealLibrary from './pages/MealLibrary'
 import BodyMetrics from './pages/BodyMetrics'
 import Settings from './pages/Settings'
 
@@ -29,7 +31,9 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/nutrition" element={<Nutrition />} />
         <Route path="/nutrition/foods" element={<FoodLibrary />} />
+        <Route path="/nutrition/meals" element={<MealLibrary />} />
         <Route path="/workouts" element={<Workouts />} />
+        <Route path="/workouts/templates" element={<WorkoutTemplates />} />
         <Route path="/workouts/exercises" element={<ExerciseLibrary />} />
         <Route path="/body" element={<BodyMetrics />} />
         <Route path="/settings" element={<Settings />} />

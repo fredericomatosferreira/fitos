@@ -6,9 +6,11 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/nutrition', icon: UtensilsCrossed, label: 'Nutrition', sub: [
     { to: '/nutrition/foods', label: 'Food Library' },
+    { to: '/nutrition/meals', label: 'Saved Meals' },
   ]},
   { to: '/workouts', icon: Dumbbell, label: 'Workouts', sub: [
     { to: '/workouts/exercises', label: 'Exercise Library' },
+    { to: '/workouts/templates', label: 'Saved Workouts' },
   ]},
   { to: '/body', icon: Activity, label: 'Body' },
   { to: '/settings', icon: Settings, label: 'Settings' },

@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useMealLogs, useFoods } from '../hooks/useNutrition'
+import { useMealTemplates } from '../hooks/useMealTemplates'
 import { useGoals } from '../hooks/useGoals'
 import { MEAL_TYPES, mealTypeLabel, calcMacros, formatNumber } from '../lib/utils'
 import DateSelector from '../components/DateSelector'
 import FoodSearchModal from '../components/FoodSearchModal'
-import { Plus, Trash2 } from 'lucide-react'
+import Modal from '../components/Modal'
+import { Plus, Trash2, BookOpen } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 
 const PIE_COLORS = {
@@ -24,8 +26,10 @@ export default function Nutrition() {
   const [date, setDate] = useState(new Date())
   const { logs, addMealLog, deleteMealLog } = useMealLogs(date)
   const { foods } = useFoods()
+  const { templates } = useMealTemplates()
   const { goals } = useGoals()
   const [modalOpen, setModalOpen] = useState(false)
+  const [mealModalOpen, setMealModalOpen] = useState(false)
   const [activeMealType, setActiveMealType] = useState('breakfast')
 
   const totals = useMemo(() => {
@@ -68,6 +72,23 @@ export default function Nutrition() {
   const openModal = (mealType) => {
     setActiveMealType(mealType)
     setModalOpen(true)
+  }
+
+  const openMealModal = (mealType) => {
+    setActiveMealType(mealType)
+    setMealModalOpen(true)
+  }
+
+  const handleLogMealTemplate = async (template) => {
+    const items = template.meal_template_items || []
+    for (const item of items) {
+      await addMealLog({
+        meal_type: activeMealType,
+        food_id: item.food_id,
+        quantity_g: item.quantity_g,
+      })
+    }
+    setMealModalOpen(false)
   }
 
   const progressBars = [
@@ -122,12 +143,22 @@ export default function Nutrition() {
                 })}
               </div>
             )}
-            <button
-              onClick={() => openModal(type)}
-              className="flex items-center gap-1 text-primary text-xs font-medium mt-2 hover:opacity-70 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Add food
-            </button>
+            <div className="flex items-center gap-4 mt-2">
+              <button
+                onClick={() => openModal(type)}
+                className="flex items-center gap-1 text-primary text-xs font-medium hover:opacity-70 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add food
+              </button>
+              {templates.length > 0 && (
+                <button
+                  onClick={() => openMealModal(type)}
+                  className="flex items-center gap-1 text-secondary text-xs font-medium hover:opacity-70 transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" /> Log saved meal
+                </button>
+              )}
+            </div>
           </div>
         )
       })}
@@ -208,6 +239,38 @@ export default function Nutrition() {
         foods={foods}
         onSelect={handleAddFood}
       />
+
+      <Modal open={mealModalOpen} onClose={() => setMealModalOpen(false)} title="Log Saved Meal">
+        <p className="text-sm text-muted-foreground mb-4">
+          All foods in the selected meal will be logged to <strong className="text-foreground">{mealTypeLabel(activeMealType)}</strong>.
+        </p>
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {templates.map(template => {
+            const items = template.meal_template_items || []
+            const totals = items.reduce((acc, i) => {
+              if (!i.food) return acc
+              const m = calcMacros(i.food, i.quantity_g)
+              acc.calories += m.calories; acc.protein += m.protein; acc.carbs += m.carbs; acc.fat += m.fat
+              return acc
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0 })
+            return (
+              <button
+                key={template.id}
+                onClick={() => handleLogMealTemplate(template)}
+                className="w-full text-left bg-muted/30 hover:bg-muted rounded-lg border border-border p-3 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-sm text-foreground">{template.name}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{formatNumber(totals.calories, 0)} kcal</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {items.map(i => i.food?.name).filter(Boolean).join(', ')}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
     </>
   )
 }
