@@ -108,15 +108,15 @@ export default function Dashboard() {
       <div className="bg-card rounded-lg border border-border p-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-6">Macros</p>
         <div className="flex items-center justify-around flex-wrap gap-6">
-          <MacroRing label="Calories" value={totals.calories} goal={goals.calories} color={MACRO_COLORS.calories} size={120} unit="kcal" />
-          <MacroRing label="Protein" value={totals.protein} goal={goals.protein_g} color={MACRO_COLORS.protein} size={110} unit="g" />
-          <MacroRing label="Carbs" value={totals.carbs} goal={goals.carbs_g} color={MACRO_COLORS.carbs} size={110} unit="g" />
-          <MacroRing label="Fat" value={totals.fat} goal={goals.fat_g} color={MACRO_COLORS.fat} size={110} unit="g" />
+          <MacroRing label="Calories" value={totals.calories} goal={goals.calories} color={MACRO_COLORS.calories} size={110} unit="kcal" />
+          <MacroRing label="Protein" value={totals.protein} goal={goals.protein_g} color={MACRO_COLORS.protein} size={100} unit="g" />
+          <MacroRing label="Carbs" value={totals.carbs} goal={goals.carbs_g} color={MACRO_COLORS.carbs} size={100} unit="g" />
+          <MacroRing label="Fat" value={totals.fat} goal={goals.fat_g} color={MACRO_COLORS.fat} size={100} unit="g" />
         </div>
       </div>
 
       {/* Two-column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* TODAY'S MEALS */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -136,7 +136,7 @@ export default function Dashboard() {
                   </div>
                   {items.map(log => (
                     <div key={log.id} className="flex items-center justify-between py-1 pl-4">
-                      <span className="text-sm text-muted-foreground">{log.food.name}</span>
+                      <span className="text-sm font-medium text-foreground">{log.food.name}</span>
                       <span className="text-sm text-muted-foreground tabular-nums">{formatNumber(log.quantity_g, 0)}g</span>
                     </div>
                   ))}
@@ -203,7 +203,7 @@ export default function Dashboard() {
           )}
         </div>
         {weightData.length >= 2 ? (
-          <div className="h-48">
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weightData}>
                 <defs>
@@ -221,7 +221,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-48 flex items-center justify-center">
+          <div className="h-40 flex items-center justify-center">
             <p className="text-sm text-muted-foreground">Not enough data</p>
           </div>
         )}
@@ -229,13 +229,13 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
-        <button onClick={() => navigate('/nutrition')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-colors">
+        <button onClick={() => navigate('/nutrition')} className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors">
           <Plus className="w-4 h-4" /> Log Meal
         </button>
-        <button onClick={() => navigate('/workouts')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors">
+        <button onClick={() => navigate('/workouts')} className="flex items-center gap-2 px-4 py-2 rounded-md border border-secondary text-secondary text-sm font-medium hover:bg-secondary/10 transition-colors">
           <Plus className="w-4 h-4" /> Log Workout
         </button>
-        <button onClick={() => navigate('/body')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors">
+        <button onClick={() => navigate('/body')} className="flex items-center gap-2 px-4 py-2 rounded-md border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors">
           <Plus className="w-4 h-4" /> Log Weight
         </button>
       </div>

@@ -126,7 +126,7 @@ export default function Nutrition() {
                         <span className="text-sm font-medium text-foreground">{log.food.name}</span>
                         <span className="text-xs text-muted-foreground ml-2">{formatNumber(log.quantity_g, 0)}g</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs tabular-nums shrink-0">
+                      <div className="flex items-center gap-3 text-sm tabular-nums shrink-0">
                         <span className="text-muted-foreground">{formatNumber(m.calories, 0)} kcal</span>
                         <span className="text-secondary font-medium">P {formatNumber(m.protein, 0)}g</span>
                         <span className="text-accent font-medium">C {formatNumber(m.carbs, 0)}g</span>

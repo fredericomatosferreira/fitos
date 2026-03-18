@@ -52,7 +52,7 @@ export default function Layout() {
                     }`
                   }
                 >
-                  <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.8} />
+                  <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.8} />
                   {!collapsed && <span>{item.label}</span>}
                 </NavLink>
                 {/* Sub-navigation */}

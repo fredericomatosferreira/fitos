@@ -194,14 +194,14 @@ export default function Workouts() {
           return (
             <div key={session.id} className="bg-card rounded-lg border border-border overflow-hidden">
               {/* Session header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="flex items-center justify-between px-5 py-4 group/header">
                 <div>
                   <h3 className="font-bold text-lg text-foreground">{session.name}</h3>
                   <p className="text-xs text-muted-foreground">{groups.length} exercises · {totalSets} total sets</p>
                 </div>
                 <button
                   onClick={() => deleteSession(session.id)}
-                  className="p-2 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  className="p-2 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover/header:opacity-100"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -220,7 +220,7 @@ export default function Workouts() {
               {groups.length === 0 ? (
                 <div className="px-5 py-10 text-center text-sm text-muted-foreground">No exercises added yet</div>
               ) : (
-                <div className="divide-y divide-border">
+                <div className="px-5 py-3 space-y-2">
                   {groups.map(group => {
                     const hasPb = group.sets.some(s => s.is_pb)
                     const bestWeight = Math.max(...group.sets.map(s => s.weight_kg || 0))
@@ -229,7 +229,7 @@ export default function Workouts() {
                       <div key={group.exercise?.id || 'unknown'}>
                         <button
                           onClick={() => setExpandedExercise(isExpanded ? null : group.exercise?.id)}
-                          className="flex items-center justify-between w-full px-5 py-3 text-left hover:bg-muted/30 transition-colors"
+                          className="flex items-center justify-between w-full bg-muted/50 rounded-md px-4 py-2.5 text-left hover:bg-muted/70 transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground">{group.exercise?.name || 'Unknown'}</span>
@@ -307,7 +307,7 @@ export default function Workouts() {
               )}
 
               {/* Add exercise link */}
-              <div className="px-5 py-3 border-t border-border">
+              <div className="px-5 pb-4">
                 <button
                   onClick={() => setAddingToSession(addingToSession === session.id ? null : session.id)}
                   className="flex items-center gap-1 text-primary text-xs font-medium hover:opacity-70 transition-colors"
