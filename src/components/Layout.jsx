@@ -1,16 +1,21 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, UtensilsCrossed, Dumbbell, Activity, Settings, ChevronLeft } from 'lucide-react'
+import { LayoutDashboard, UtensilsCrossed, Dumbbell, Activity, Settings, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/nutrition', icon: UtensilsCrossed, label: 'Nutrition' },
-  { to: '/workouts', icon: Dumbbell, label: 'Workouts' },
+  { to: '/nutrition', icon: UtensilsCrossed, label: 'Nutrition', sub: [
+    { to: '/nutrition/foods', label: 'Food Library' },
+  ]},
+  { to: '/workouts', icon: Dumbbell, label: 'Workouts', sub: [
+    { to: '/workouts/exercises', label: 'Exercise Library' },
+  ]},
   { to: '/body', icon: Activity, label: 'Body' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function Layout() {
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
 
   return (
@@ -29,24 +34,45 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              title={collapsed ? item.label : undefined}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`
-              }
-            >
-              <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.8} />
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          ))}
+          {navItems.map(item => {
+            const isSection = item.to !== '/' && location.pathname.startsWith(item.to)
+            return (
+              <div key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end={item.to === '/' || !!item.sub}
+                  title={collapsed ? item.label : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`
+                  }
+                >
+                  <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.8} />
+                  {!collapsed && <span>{item.label}</span>}
+                </NavLink>
+                {/* Sub-navigation */}
+                {!collapsed && item.sub && isSection && item.sub.map(sub => (
+                  <NavLink
+                    key={sub.to}
+                    to={sub.to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 pl-10 pr-3 py-2 rounded-lg text-[13px] transition-colors ${
+                        isActive
+                          ? 'text-primary font-medium'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`
+                    }
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                    <span>{sub.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )
+          })}
         </nav>
 
         {/* Collapse toggle only */}
